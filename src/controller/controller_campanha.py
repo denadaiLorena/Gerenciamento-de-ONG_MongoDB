@@ -9,6 +9,7 @@ class Controller_Campanha:
     def __init__(self):
         self.control_pessoa = Controller_Pessoa()
         self.mongo = MongoQueries()
+        self.colecao = "campanha"
 
     def inserir_campanha(self) -> Campanha:
         from controller.controller_formaPagamento import Controller_FormaPagamento
@@ -46,8 +47,7 @@ class Controller_Campanha:
 
         # criar forma de pagamento vinculada
         control_formaPagamento = Controller_FormaPagamento()
-        formaPagamento_obj = control_formaPagamento.inserir_formaPagamento(
-            self.mongo, nova_campanha)
+        formaPagamento_obj = control_formaPagamento.inserir_formaPagamento(nova_campanha)
 
         if formaPagamento_obj is None:
             print("Erro ao adicionar a forma de pagamento")
@@ -68,7 +68,7 @@ class Controller_Campanha:
         id_campanha = input("Informe o ID da Campanha que irá alterar: ")
         id_campanha_mongo = ObjectId(id_campanha)
 
-        if not self.verifica_existencia_campanha( self.mongo, id_campanha_mongo):
+        if not self.verifica_existencia_campanha(id_campanha_mongo):
             print(f"A campanha de ID {id_campanha} não existe.")
             return None
 
@@ -139,7 +139,7 @@ class Controller_Campanha:
             id_campanha = input("Informe o ID da Campanha que irá desativar: ")
             id_campanha_mongo = ObjectId(id_campanha)
 
-            if not self.verifica_existencia_campanha( self.mongo, id_campanha_mongo):
+            if not self.verifica_existencia_campanha(id_campanha_mongo):
                 print(f"A campanha de ID {id_campanha} não existe.")
                 return None
 
@@ -158,10 +158,9 @@ class Controller_Campanha:
                 return None
             
             id_pessoa = doc_campanha.get("id_pessoa")
-            if id_pessoa is not None:
-                id_pessoa_mongo = ObjectId(id_pessoa)
+            id_pessoa_mongo = ObjectId(id_pessoa)
 
-            if not self.control_pessoa.verifica_existencia_pessoa_por_id(self.mongo, id_pessoa_mongo):
+            if not self.control_pessoa.verifica_existencia_pessoa_por_id(id_pessoa_mongo):
                 print("Pessoa responsável não encontrada.")
                 return None
             
@@ -173,12 +172,12 @@ class Controller_Campanha:
                 print("Campanha desativada com Sucesso!")
 
 
-    def verifica_existencia_campanha(self, mongo: MongoQueries, id_campanha_mongo: ObjectId = None) -> bool:
-        doc_campanha = mongo.db["campanha"].find_one({"_id" : id_campanha_mongo, "status" : True}, {"_id" : 1})
+    def verifica_existencia_campanha(self, id_campanha_mongo: ObjectId = None) -> bool:
+        doc_campanha = self.mongo.db["campanha"].find_one({"_id" : id_campanha_mongo, "status" : True}, {"_id" : 1})
         return doc_campanha is not None
 
 
-    def buscar_campanhas_com_doacoes(self, mongo: MongoQueries, need_connect: bool = True):
+    def buscar_campanhas_com_doacoes(self, need_connect: bool = True):
         pipeline = [
             {
                 '$lookup': {
@@ -230,5 +229,5 @@ class Controller_Campanha:
             }
         ]
         if need_connect:
-            mongo.connect()
-        print(list(mongo.db["campanha"].aggregate(pipeline)))
+            self.mongo.connect()
+        print(list(self.mongo.db["campanha"].aggregate(pipeline)))

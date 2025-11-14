@@ -4,16 +4,16 @@ from model.pessoa import Pessoa
 
 class FormaPagamento:
     def __init__(self,
-                id_forma: int = None,
-                forma_de_pagamento: str = None,
-                campanha: Campanha = None,
-                pessoa: Pessoa = None):
+                id_forma: str,
+                forma_de_pagamento: str,
+                campanha: Campanha,
+                pessoa: Pessoa):
         self.set_id_forma(id_forma)
         self.set_forma_de_pagamento(forma_de_pagamento)
         self.set_campanha(campanha)
         self.set_pessoa(pessoa)
         
-    def set_id_forma(self, id_forma: int):
+    def set_id_forma(self, id_forma: str):
         self.id_forma = id_forma
 
     def set_campanha(self, campanha: Campanha):

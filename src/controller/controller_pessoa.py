@@ -1,5 +1,5 @@
 from model.pessoa import Pessoa
-from conexion.connection import MongoQueries, PostgresQueries
+from conexion.connection import MongoQueries
 from model.doacao import Doacao
 from model.pessoa import Pessoa
 from conexion.connection import PostgresQueries
@@ -14,6 +14,8 @@ from bson.objectid import ObjectId
 class Controller_Pessoa:
     def __init__(self):
         pass
+        self.mongo = MongoQueries()
+
 
     # insert
     def inserir_pessoa(self) -> Pessoa:
@@ -247,12 +249,11 @@ class Controller_Pessoa:
         return not df_pessoa.empty
 
 
-    #Já mexi nesse método, adicionei ele para diminuir a quantidade de chamadas no banco
-    def verifica_existencia_pessoa_por_id(self, mongo: MongoQueries, id_mongo: ObjectId) -> bool:
-        if mongo.cur is None:
-            mongo.connect()
+#LORENA - Já mexi nesse método, adicionei ele para diminuir a quantidade de chamadas no banco
+    def verifica_existencia_pessoa_por_id(self, id_mongo: ObjectId) -> bool:
+        self.mongo.connect()
 
-        doc_pessoa = mongo.db["pessoa"].find_one({"_id": id_mongo}, {"_id" : 1})
+        doc_pessoa = self.mongo.db["pessoa"].find_one({"_id": id_mongo}, {"_id" : 1})
         return doc_pessoa is not None
     
 
@@ -281,4 +282,31 @@ class Controller_Pessoa:
         except Exception as e:
             logger.log_exception(e, context='validar_pessoa')
             print("Ocorreu um erro ao validar a pessoa. Tente novamente mais tarde.")
+            return None
+
+ #LORENA - Já mexi nesse método, adicionei ele para diminuir a quantidade de chamadas no banco
+    def validar_pessoa_por_id(self, id_mongo: ObjectId) -> Pessoa:
+        try:
+            if id_mongo is None:
+                print("ID vazio.")
+                return None
+            
+            if not self.verifica_existencia_pessoa_por_id(id_mongo):
+                print(f"A pessoa de ID: {id_mongo} informado não existe.")
+                return None
+
+            self.mongo.connect()
+            doc_pessoa =  self.mongo.db["pessoa"].find_one({"_id": id_mongo}, {"_id" : 1, "nome" : 1, "cpf" : 1, "email" : 1, "tipo_pessoa" : 1})
+         
+
+            if doc_pessoa is None:
+                print("Erro interno: Pessoa não encontrada.")
+                return None
+
+            pessoa = Pessoa(str(id_mongo), doc_pessoa.get("nome"), doc_pessoa("cpf"), doc_pessoa("email"), doc_pessoa("tipo_pessoa"))
+            return pessoa
+        
+        except Exception as e:
+            logger.log_exception(e, context='validar_pessoa_por_id')
+            print("Ocorreu um erro ao validar a pessoa pelo ID. Tente novamente mais tarde.")
             return None

@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 class Pessoa:
     def __init__(self,
-                 id_pessoa: int = None,
+                 id_pessoa: str = None,
                  nome: str = None,
                  cpf: str = None,
                  email: str = None,
@@ -22,7 +22,7 @@ class Pessoa:
         self.set_tipo_pessoa(tipo_pessoa)
         self.doacoes = [] if doacoes is None else doacoes
 
-    def set_id_pessoa(self, id_pessoa: int):
+    def set_id_pessoa(self, id_pessoa: str):
         self.id_pessoa = id_pessoa
 
     def set_nome(self, nome: str):
@@ -51,7 +51,7 @@ class Pessoa:
     def add_doacao(self, doacao: 'Doacao'):
         self.doacoes.append(doacao)
 
-    def get_id_pessoa(self) -> int:
+    def get_id_pessoa(self) -> str:
         return self.id_pessoa
 
     def get_nome(self) -> str:
