@@ -1,37 +1,154 @@
-from conexion.connection import PostgresQueries
+from conexion.connection import MongoQueries
 
 
 class Relatorio:
     def __init__(self):
-        with open("src/sql/relatorio_doacoes.sql") as f:
-            self.query_relatorio_doacoes = f.read()
-
-        with open("src/sql/relatorio_campanhas.sql") as f:
-            self.query_relatorio_campanhas = f.read()
-
-        with open("src/sql/relatorio_pessoas.sql") as f:
-            self.query_relatorio_pessoas = f.read()
+        pass
+        self.mongo = MongoQueries()
 
     def get_relatorio_campanhas(self):
-        postgree = PostgresQueries()
-        postgree.connect()
+        self.mongo.connect()
 
-        print(postgree.sqlToDataFrame(self.query_relatorio_campanhas))
-        input("Pressione Enter para Sair do Relatório de Campanhas \n")
+        pipeline = [
+            {
+                "$match": {"status": True}
+            },
 
 
+            {
+                "$lookup": {
+                    "from": "pessoas",
+                    "localField": "id_pessoa",
+                    "foreignField": "id_pessoa",
+                    "as": "pessoa_responsavel"
+                }
+            },
+            {
+                "$unwind": {
+                    "path": "$pessoa_responsavel",
+                    "preserveNullAndEmptyArrays": True
+                }
+            },
+
+
+            {
+                "$lookup": {
+                    "from": "doacoes",
+                    "localField": "id_campanha",
+                    "foreignField": "id_campanha",
+                    "as": "doacoes"
+                }
+            },
+
+
+            {
+                "$addFields": {
+                    "total_de_doacoes": {"$size": "$doacoes"},
+                    "valor_total_arrecadado": {"$sum": "$doacoes.valor"}
+                }
+            },
+
+
+            {
+                "$project": {
+                    "_id": 0,
+                    "id_campanha": 1,
+                    "nome_campanha": "$nome",
+                    "descricao": 1,
+                    "pessoa_responsavel": "$pessoa_responsavel.nome",
+                    "data_inicio": 1,
+                    "data_fim": 1,
+                    "status": 1,
+                    "total_de_doacoes": 1,
+                    "valor_total_arrecadado": 1
+                }
+            },
+
+
+            {
+                "$sort": {
+                    "valor_total_arrecadado": -1,
+                    "nome_campanha": 1
+                }
+            }
+        ]
+
+        resultado = list(self.mongo.db["campanhas"].aggregate(pipeline))
+
+        print(resultado)
+        input("Pressione Enter para Sair do Relatório de Campanhas\n")
 
     def get_relatorio_doacoes(self):
-        postgree = PostgresQueries()
-        postgree.connect()
+        self.mongo.connect()
 
-        print(postgree.sqlToDataFrame(self.query_relatorio_doacoes))
-        input("Pressione Enter para Sair do Relatório de Doações")
+        pipeline = [
 
+            {
+                "$lookup": {
+                    "from": "pessoas",
+                    "localField": "id_pessoa",
+                    "foreignField": "id_pessoa",
+                    "as": "doador"
+                }
+            },
+            {"$unwind": "$doador"},
+
+
+            {
+                "$lookup": {
+                    "from": "campanhas",
+                    "localField": "id_campanha",
+                    "foreignField": "id_campanha",
+                    "as": "campanha"
+                }
+            },
+            {"$unwind": "$campanha"},
+
+
+            {
+                "$project": {
+                    "_id": 0,
+                    "id_doacao": 1,
+                    "nome_doador": "$doador.nome",
+                    "cpf": "$doador.cpf",
+                    "id_campanha": "$campanha.id_campanha",
+                    "nome_campanha": "$campanha.nome",
+                    "valor_doacao": "$valor",
+                    "data_doacao": 1
+                }
+            },
+
+
+            {
+                "$sort": {
+                    "data_doacao": -1,
+                    "nome_doador": 1
+                }
+            }
+        ]
+
+        resultado = list(self.mongo.db["doacoes"].aggregate(pipeline))
+        print(resultado)
+        input("Pressione Enter para Sair do Relatório de Doações\n")
 
     def get_relatorio_pessoas(self):
-        postgree = PostgresQueries()
-        postgree.connect()
+        self.mongo.connect()
 
-        print(postgree.sqlToDataFrame(self.query_relatorio_pessoas))
+        pipeline = [
+            {
+                "$project": {
+                    "_id": 0,
+                    "id_pessoa": 1,
+                    "nome": 1,
+                    "cpf": 1,
+                    "tipo_pessoa": 1
+                }
+            },
+            {
+                "$sort": {"nome": 1}
+            }
+        ]
+
+        resultado = list(self.mongo.db["pessoas"].aggregate(pipeline))
+        print(resultado)
         input("Pressione Enter para Sair do Relatório de Pessoas")
